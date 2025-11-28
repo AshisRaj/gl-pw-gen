@@ -1,0 +1,39 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import axios from "axios";
+
+let allureInstance: any;
+
+// Try dynamic import once (works in ESM, avoids require)
+try {
+  const mod = await import("allure-playwright");
+  allureInstance = mod.allure;
+} catch {
+  // safely ignore if allure isn't available (e.g. non-test run)
+}
+
+/**
+ * Base API client for Playwright tests
+ */
+export const api = axios.create({
+  baseURL: process.env.API_BASE_URL || process.env.API_BASE_URL || "http://localhost:3000",
+  timeout: 30_000
+});
+
+// Tag API calls in Allure reports if available
+api.interceptors.request.use(cfg => {
+  try {
+    allureInstance?.label("api", cfg.url ?? "");
+  } catch {
+    // no-op
+  }
+  return cfg;
+});
+
+// Optional: log errors globally (extend as needed)
+api.interceptors.response.use(
+  res => res,
+  err => {
+    console.error(`[API ERROR] ${err?.config?.url ?? "unknown"}`, err.message);
+    throw err;
+  }
+);

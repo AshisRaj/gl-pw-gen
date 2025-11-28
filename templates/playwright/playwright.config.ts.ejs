@@ -1,0 +1,285 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { defineConfig, devices, ReporterDescription } from '@playwright/test';
+import dotenv from 'dotenv';
+import os from 'os';
+<% if (reporter === "monocart") { %>
+import fs from 'fs';
+<% } %>
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Always resolve paths from the generated project's config file location
+const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
+
+// Load the appropriate .env file based on the ENV variable
+const ENV = (process.env.ENV || 'uat').toLowerCase();
+const dotEnvPath = path.resolve(PROJECT_ROOT, `src/environments/.env.${ENV}`);
+dotenv.config({ path: dotEnvPath });
+
+/**
+ * Shared metadata available for reporters
+ */
+
+ export interface MonocartSummary {
+  name: string;
+  dateH: string;
+  durationH: string;
+  cwd: string;
+  outputFile: string;
+  outputDir: string;
+  system: {
+    arch: string;
+    platform: string;
+    release: string;
+    type: string;
+    version: string;
+    hostname: string;
+    node: string;
+    playwright: string;
+    testDir: string;
+    outputFile: string;
+    outputDir: string;
+  };
+  htmlPath: string;
+  jsonPath: string;
+  summaryTable: string;
+}
+
+const now = new Date();
+
+const reportMetaData = {
+  hostname: os.hostname(),
+  user_id: (() => {
+    try {
+      return os.userInfo().username || '';
+    } catch {
+      return '';
+    }
+  })(),
+  platform: os.platform(),
+  release: os.release(),
+  version: typeof (os as any).version === 'function' ? (os as any).version() : '',
+  type: os.type(),
+  node: process.version,
+  env: process.env.ENV || 'dev',
+  // injected by generator
+  project: "<%= projectName %>",
+  preset: "<%= preset %>",
+  ci: "<%= ci %>",
+  reporter: "<%= reporter %>",
+  language: "<%= language %>",
+  generatedAt: now.toISOString(),
+  date: now.toLocaleString('en-IN', {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
+};
+
+/**
+ * Inline reporter selection (generator-controlled)
+ * - monocart: adds onEnd email hook and trend file
+ * - allure:   basic allure-playwright reporter
+ * - html:     built-in HTML
+ * - list:     simple console reporter
+ */
+
+const reporter: ReporterDescription[] =
+<% if (reporter === "monocart") { %>
+  [
+    [
+      './src/reporters/custom-reporter.ts',
+      {
+        reportMetaData,
+      },
+    ],
+    ["monocart-reporter", {
+      name: "<%= projectName %> - Functional UI Test Report",
+      outputFile: path.join(PROJECT_ROOT, "artifacts", "reports", "monocart-report", "index.html"),
+      tags: {
+        smoke: {
+          style: {
+            background: '#6F9913',
+          },
+          description: 'This is Smoke Test',
+        },
+        regression: {
+          style: {
+            background: '#c00',
+          },
+          description: 'This is Regression Test',
+        },
+      },
+      copyAttachments: false,
+      clean: true,
+      trend: path.join(PROJECT_ROOT, "artifacts", "reports", "monocart-report", "index.json"),
+      // async hook after report data generated
+      onEnd: async (reportData: any, helper: any) => {
+        const monocartReportSummary: MonocartSummary = {
+          name: reportData.name,
+          dateH: reportData.dateH,
+          durationH: reportData.durationH,
+          cwd: reportData.cwd,
+          outputFile: reportData.outputFile,
+          outputDir: reportData.outputDir,
+          system: {
+            arch: reportData.system.arch,
+            platform: reportData.system.platform,
+            release: reportData.system.release,
+            type: reportData.system.type,
+            version: reportData.system.version,
+            hostname: reportData.system.hostname,
+            node: reportData.system.node,
+            playwright: reportData.system.playwright,
+            testDir: reportData.system.testDir,
+            outputFile: reportData.system.outputFile,
+            outputDir: reportData.system.outputDir,
+          },
+          htmlPath: reportData.htmlPath,
+          jsonPath: reportData.jsonPath,
+          summaryTable: reportData.summaryTable,
+        };
+
+        const globalReportPath = path.join(
+          PROJECT_ROOT,
+          'artifacts',
+          'reports',
+          'monocart-report',
+          'monocart-report-data.json',
+        );
+
+        // save reportData => global JSON
+        fs.writeFileSync(globalReportPath, JSON.stringify(monocartReportSummary, null, 2));
+      },
+      // example categories (edit to suit your project)
+      categories: [
+        { name: "UI Tests",  condition: (info: any) => /[\\/]tests[\\/].*ui/i.test(info.file || "") },
+        { name: "API Tests", condition: (info: any) => /[\\/]tests[\\/].*api/i.test(info.file || "") }
+      ],
+      theme: "dark",
+      // ✅ Add this charts config block
+      charts: {
+        categories: {
+          type: 'donut',
+          tooltip: {
+            show: true,
+            formatter: (params: any) => {
+              // 'params' contains details about the segment hovered
+              return `
+              <b>${params.name}</b><br/>
+              Count: ${params.value}<br/>
+              Percentage: ${params.percent}%
+            `;
+            },
+          },
+        },
+      },
+      timestamp: true,
+      // zip: { outputFile: path.join(PROJECT_ROOT, "artifacts", "reports", "monocart-report", "monocart-report.zip"), clean: true }
+    }] as [string, any],
+
+  ];
+<% } else if (reporter === "allure") { %>
+  [
+    [
+      './src/reporters/custom-reporter.ts',
+      {
+        reportMetaData,
+      },
+    ],
+    ["allure-playwright", {
+      // tweak as needed
+      detail: true,
+      resultsDir: path.join(PROJECT_ROOT, "artifacts", "reports", "allure-results"),
+      suiteTitle: true,
+      open: "never",
+      environmentInfo: {
+        ...reportMetaData
+      }
+    }] as [string, any]
+  ];
+<% } else if (reporter === "html") { %>
+  [
+    [
+      './src/reporters/custom-reporter.ts',
+      {
+        reportMetaData,
+      },
+    ],
+    ['html', { open: 'always' }], // Keep the default HTML reporter
+  ];
+  <% } else { %>
+  [
+    [
+      './src/reporters/custom-reporter.ts',
+      {
+        reportMetaData,
+      },
+    ],
+    "list"
+  ];
+<% } %>
+
+export default defineConfig({
+  // Global hooks
+  // Global Setup to run before all tests
+  globalSetup: "./src/utils/global-setup",
+  // Global Teardown to run after all tests
+  globalTeardown: "./src/utils/global-teardown",
+
+  testDir: "./tests",
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+
+  // Provide top-level metadata for Playwright
+  metadata: reportMetaData,
+
+  // Reporters (selected above)
+  reporter,
+
+  // Shared options
+  use: {
+    baseURL: process.env.BASE_URL || "https://example.com",
+    trace: "off",
+    video: "off",
+    screenshot: "only-on-failure"
+  },
+
+  // Where Playwright writes its artifacts for each test
+  outputDir: path.join(PROJECT_ROOT, "artifacts", "reports"),
+
+  // Browsers
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      metadata: reportMetaData,
+    },
+    // { name: 'firefox', use: { ...devices['Desktop Firefox'] }, metadata: reportMetaData },
+    // { name: 'webkit', use: { ...devices['Desktop Safari'] }, metadata: reportMetaData },
+    // { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] }, metadata: reportMetaData },
+    // { name: 'Mobile Safari', use: { ...devices['iPhone 12'] }, metadata: reportMetaData },
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    //   metadata: reportMetaData,
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    //   metadata: reportMetaData,
+    // },
+  ]
+
+  // Dev server example:
+  // webServer: {
+  //   command: "npm run start",
+  //   url: "http://127.0.0.1:3000",
+  //   reuseExistingServer: !process.env.CI
+  // }
+});

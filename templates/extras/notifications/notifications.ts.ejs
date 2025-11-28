@@ -1,0 +1,142 @@
+/**
+ * Stub for results notifications.
+ * Fill your org's base URL, project key, and API tokens into .env files.
+ */
+
+import { WebClient } from '@slack/web-api';
+import { logger } from '@utils';
+import axios from 'axios';
+import nodemailer from 'nodemailer';
+import { buildUnifiedSummary } from './summaryBuilder';
+
+export interface NotificationSummary {
+  status: string;
+  totalTests: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  durationMs: number;
+  startTime?: string | number;
+  endTime?: string | number;
+}
+
+export interface NotificationAttachment {
+  filename: string;
+  path: string;
+}
+
+export interface NotifyOptions {
+  summary: NotificationSummary;
+  attachments?: NotificationAttachment[];
+}
+
+// export interface reportData {
+//   name: string;
+//   dateH: string;
+//   htmlPath: string;
+//   metadata: {
+//     env: string;
+//     hostname: string;
+//     user_id: string;
+//     os_name: string;
+//     branch: string;
+//     folderPath: string;
+//     node_version: string;
+//   };
+//   durationH: string;
+//   summaryTable: string;
+// }
+
+export async function sendNotifications(options: NotifyOptions) {
+  const { summary, attachments = [] } = options;
+  const reportData = await buildUnifiedSummary();
+
+  // EMAIL
+  if (process.env.NOTIFY_EMAIL === 'true') {
+    try {
+      const emailOptions = {
+        transport: {
+          service: 'gmail',
+          auth: {
+            user: process.env.USERNAME || 'ashis.raj@gmail.com',
+            pass: process.env.PASSWORD || 'vklg pbec exru hkvi',
+          },
+        },
+        message: {
+          from: process.env.EMAIL_FROM || 'ashis.raj@gmail.com',
+          to: process.env.EMAIL_TO || 'ashis.raj@gmail.com',
+          cc: process.env.EMAIL_CC || 'ashis.raj@gmail.com',
+          bcc: process.env.EMAIL_BCC || '',
+          subject: process.env.EMAIL_SUB || `Test Report - ${reportData.durationMs}`,
+          attachments: attachments.map((a) => ({
+            filename: a.filename,
+            path: a.path,
+          })),
+
+          html: `<h3>${summary.status}</h3>
+              <ul>
+                <li>${reportData.passed}</li>
+              </ul>
+
+                <p>Please check attachment html for detail.</p>
+
+                <p>Thanks,</p>`,
+        },
+      };
+
+      const transporter = nodemailer.createTransport(emailOptions.transport);
+      return await transporter.sendMail(emailOptions.message);
+
+      // logger.info('📧 Email sent');
+    } catch (err) {
+      logger.error('❌ Email error:', err);
+    }
+  }
+
+  // SLACK
+  if (process.env.NOTIFY_SLACK === 'true') {
+    try {
+      const slack = new WebClient(process.env.SLACK_TOKEN);
+
+      await slack.chat.postMessage({
+        channel: process.env.SLACK_CHANNEL!,
+        text:
+          `*Playwright Test Summary*\n` +
+          `Status: ${summary.status}\n` +
+          `Passed: ${summary.passed}\n` +
+          `Failed: ${summary.failed}\n` +
+          `Duration: ${summary.durationMs}ms`,
+      });
+
+      console.log('💬 Slack sent');
+    } catch (err) {
+      console.error('❌ Slack error:', err);
+    }
+  }
+
+  // TEAMS
+  if (process.env.NOTIFY_TEAMS === 'true') {
+    try {
+      await axios.post(process.env.TEAMS_WEBHOOK_URL!, {
+        '@type': 'MessageCard',
+        '@context': 'http://schema.org/extensions',
+        themeColor: '0076D7',
+        summary: 'Playwright Test Summary',
+        sections: [
+          {
+            activityTitle: 'Playwright Test Summary',
+            text:
+              `**Status:** ${summary.status}\n\n` +
+              `**Passed:** ${summary.passed}\n\n` +
+              `**Failed:** ${summary.failed}\n\n` +
+              `**Duration:** ${summary.durationMs}ms`,
+          },
+        ],
+      });
+
+      console.log('💼 Teams sent');
+    } catch (err) {
+      console.error('❌ Teams error:', err);
+    }
+  }
+}
