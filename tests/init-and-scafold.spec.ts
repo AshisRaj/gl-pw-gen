@@ -58,7 +58,9 @@ function expectFiles(root: string, c: any) {
       exists(
         path.join(
           root,
-          c.ci === 'github' ? ['.github', 'workflows', 'ci.yml'].join(path.sep) : '.gitlab-ci.yml',
+          c.ci === 'github'
+            ? ['.github', 'workflows', 'github-ci.yml'].join(path.sep)
+            : '.gitlab-ci.yml',
         ),
       ),
     ).toBe(true);
