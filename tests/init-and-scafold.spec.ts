@@ -167,7 +167,7 @@ describe('init (matrix)', () => {
         expect(cfg).toMatch(/outputFile: .*monocart-report.*index\.html/);
       }
 
-      expect(cfg).toMatch(/reportMetaData = \s*{/);
+      expect(cfg).toMatch(/reportMetaData = \s*new MetadataBuilder()/);
       // custom reporter also present
       expect(cfg).toMatch(/\.\/src\/reporters\/custom-reporter\.ts/);
 
