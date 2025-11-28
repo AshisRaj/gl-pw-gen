@@ -28,28 +28,34 @@ export async function scaffold(a: Answers) {
   });
 
   // 1) Base files
-  await step('Scaffold base files', async () => {
-    await renderAndCopyDir(TPL('base'), dest, a);
-  });
+  await step(
+    'Scaffold base files and folders (.vscode/, .editorconfig, .gitignore, .prettierignore, .prettierrc, eslint.config.js, package.json, README.md, tsconfig.json)',
+    async () => {
+      await renderAndCopyDir(TPL('base'), dest, a);
+    },
+  );
 
   // 2) Playwright structure
-  await step('Add Playwright structure', async () => {
-    await renderAndCopyDir(TPL('playwright'), dest, a);
-  });
+  await step(
+    'Add Playwright structure (src => config, data, environments, fixtures, helpers, pages, reporters, services, utils, tests => cart, checkout, inventory), playwright.config.ts)',
+    async () => {
+      await renderAndCopyDir(TPL('playwright'), dest, a);
+    },
+  );
 
-  // 3) Reporters / Allure / Monocart
+  // 3) Reporters:  Allure / Monocart / html
   if (a.reporter === 'allure') {
-    await step('Include Allure docs', async () => {
+    await step('Include Allure docs (docs/reporters/allure)', async () => {
       await copyDir(TPL('docs/reporters/allure'), path.join(dest, 'docs/reporters/allure'));
     });
   } else if (a.reporter === 'monocart') {
-    await step('Include Monocart docs', async () => {
+    await step('Include Monocart docs (docs/reporters/monocart)', async () => {
       await copyDir(TPL('docs/reporters/monocart'), path.join(dest, 'docs/reporters/monocart'));
     });
   }
 
   if (a.notifications === 'email') {
-    await step('Add Notifications stub', async () => {
+    await step('Add Notifications stub (email, slack, teams)', async () => {
       await renderAndCopyDir(
         TPL('extras/notifications'),
         path.join(dest, 'tools', 'notifications'),
@@ -69,7 +75,7 @@ export async function scaffold(a: Answers) {
   }
 
   if (a.husky) {
-    await step('Setup Husky hooks', async () => {
+    await step('Setup Husky hooks (.husky/)', async () => {
       await copyDir(TPL('husky'), path.join(dest, '.husky'));
     });
   }
@@ -83,10 +89,6 @@ export async function scaffold(a: Answers) {
       );
     });
   }
-
-  await step('Add utils', async () => {
-    await renderAndCopyDir(TPL('utils'), path.join(dest, 'src', 'utils'), a);
-  });
 
   // 4) package.json dependency wiring
   const pkgPath = path.join(dest, 'package.json');

@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineConfig, devices, ReporterDescription } from '@playwright/test';
 import dotenv from 'dotenv';
-import { MetadataBuilder } from './src/utils/metadata-builder';
-
-import os from 'os';
+import { MetadataBuilder } from '@utils';
 <% if (reporter === "monocart") { %>
 import fs from 'fs';
 <% } %>
