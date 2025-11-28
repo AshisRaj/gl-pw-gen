@@ -36,7 +36,6 @@ artifacts/reports/*
 artifacts/cookies/*
 !artifacts/cookies/.keep
 
-
-
 /dist
-*.js
+dist/*.js.map
+dist/scaffold.js
