@@ -84,6 +84,10 @@ export async function scaffold(a: Answers) {
     });
   }
 
+  await step('Add utils', async () => {
+    await renderAndCopyDir(TPL('utils'), path.join(dest, 'src', 'utils'), a);
+  });
+
   // 4) package.json dependency wiring
   const pkgPath = path.join(dest, 'package.json');
   const pkg = JSON.parse((await fs.readFile(pkgPath)).toString());

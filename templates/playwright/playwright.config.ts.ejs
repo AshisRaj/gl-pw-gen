@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineConfig, devices, ReporterDescription } from '@playwright/test';
 import dotenv from 'dotenv';
+import { MetadataBuilder } from './src/utils/metadata-builder';
+
 import os from 'os';
 <% if (reporter === "monocart") { %>
 import fs from 'fs';
@@ -20,64 +22,17 @@ dotenv.config({ path: dotEnvPath });
  * Shared metadata available for reporters
  */
 
- export interface MonocartSummary {
-  name: string;
-  dateH: string;
-  durationH: string;
-  cwd: string;
-  outputFile: string;
-  outputDir: string;
-  system: {
-    arch: string;
-    platform: string;
-    release: string;
-    type: string;
-    version: string;
-    hostname: string;
-    node: string;
-    playwright: string;
-    testDir: string;
-    outputFile: string;
-    outputDir: string;
-  };
-  htmlPath: string;
-  jsonPath: string;
-  summaryTable: string;
-}
-
-const now = new Date();
-
-const reportMetaData = {
-  hostname: os.hostname(),
-  user_id: (() => {
-    try {
-      return os.userInfo().username || '';
-    } catch {
-      return '';
-    }
-  })(),
-  platform: os.platform(),
-  release: os.release(),
-  version: typeof (os as any).version === 'function' ? (os as any).version() : '',
-  type: os.type(),
-  node: process.version,
-  env: process.env.ENV || 'dev',
-  // injected by generator
-  project: "<%= projectName %>",
-  preset: "<%= preset %>",
-  ci: "<%= ci %>",
-  reporter: "<%= reporter %>",
-  language: "<%= language %>",
-  generatedAt: now.toISOString(),
-  date: now.toLocaleString('en-IN', {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }),
-};
+const reportMetaData = new MetadataBuilder()
+  .addBase({
+    // injected by generator
+    project: "<%= projectName %>",
+    preset: "<%= preset %>",
+    ci: "<%= ci %>",
+    reporter: "<%= reporter %>",
+    language: "<%= language %>",
+    env: process.env.ENV || 'dev',
+  })
+  .build();
 
 /**
  * Inline reporter selection (generator-controlled)
@@ -224,6 +179,20 @@ const reporter: ReporterDescription[] =
 <% } %>
 
 export default defineConfig({
+  // -------------------------------
+  // GLOBAL TEST TIMEOUTS
+  // -------------------------------
+  // CI (Stable App) timeout: 60_000,
+  // CI (Flaky App / Slow Environments) timeout: 120_000,
+  // Local Development
+  timeout: 90_000, // default: 30s per test
+
+  // CI (Stable App) expect: { timeout: 7_000 },
+  // CI (Flaky App / Slow Environments) expect: { timeout: 10_000 },
+  // Local Development
+  expect: {
+    timeout: 10_000, // default: 5s for expect() checks
+  },
   // Global hooks
   // Global Setup to run before all tests
   globalSetup: "./src/utils/global-setup",
@@ -257,7 +226,24 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // -------------------------------
+        // ACTION TIMEOUTS
+        // -------------------------------
+        // CI (Stable App) actionTimeout: 15_000,
+        // CI (Flaky App / Slow Environments) actionTimeout: 20_000,
+        // Local Development
+        actionTimeout: 0, // default: no timeout for click/fill/etc.
+
+        // -------------------------------
+        // NAVIGATION TIMEOUTS
+        // -------------------------------
+        // CI (Stable App) navigationTimeout: 25_000,
+        // CI (Flaky App / Slow Environments) navigationTimeout: 40_000,
+        // Local Development
+        navigationTimeout: 0, // default: no timeout for navigation-triggering actions},
+      },
       metadata: reportMetaData,
     },
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] }, metadata: reportMetaData },

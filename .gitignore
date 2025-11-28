@@ -9,9 +9,10 @@ trace.zip
 # editor
 .idea/
 # .vscode/
-dist/
 
 html/
+
+test-ui/
 
 
 # Playwright
@@ -37,3 +38,5 @@ artifacts/cookies/*
 
 
 
+/dist
+*.js
