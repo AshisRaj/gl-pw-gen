@@ -42,3 +42,4 @@ dist/*.js.map
 dist/scaffold.js
 /dist/*.js.map
 /dist/scaffold.js
+dist/scaffold.js
