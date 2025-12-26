@@ -10,7 +10,7 @@ import type {
 import { logger } from '@utils';
 import fs from 'fs';
 import { bold, cyan, dim, gray, green, magenta, red, yellow } from 'kolorist';
-import path from 'path';
+import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -49,6 +49,16 @@ export default class CustomReporter implements Reporter {
 
   onBegin(config: FullConfig, suite: Suite) {
     ensureDir(ARTIFACTS_DIR);
+    const allureResultPath = join(ARTIFACTS_DIR, 'reports', 'allure-results');
+
+    if (!fs.existsSync(allureResultPath)) {
+      fs.mkdirSync(join(allureResultPath), { recursive: true });
+    }
+
+    const srcDir = join(PROJECT_ROOT, 'src', 'configs', 'executor.json');
+    const destDir = join(allureResultPath, 'executor.json');
+
+    fs.copyFileSync(srcDir, destDir);
     logger.info(cyan(`🧪 Test run started with ${suite.allTests().length} tests`));
   }
 
@@ -113,7 +123,7 @@ export default class CustomReporter implements Reporter {
     this.summary.durationHS = `${(this.summary.durationMs / 1000).toFixed(2)}s`;
     this.summary.projects = Array.from(this.projects);
 
-    const status = this.summary.failed > 0 ? 'Failed' : 'Passed';
+    const status = this.summary.total === 0 || this.summary.failed > 0 ? 'Failed' : 'Passed';
     this.summary.status = status;
     const out = { ...this.summary, ...this.reportMetaData };
     fs.writeFileSync(REPORT_JSON, JSON.stringify(out, null, 2));

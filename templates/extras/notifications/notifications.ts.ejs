@@ -253,7 +253,7 @@ export async function sendNotifications(args: any, summary: any) {
         ],
       };
 
-      if (mergedSummary.passed === mergedSummary.total) {
+      if (mergedSummary.total > 0 && mergedSummary.passed === mergedSummary.total) {
         message.blocks.push({
           type: 'section',
           text: {
