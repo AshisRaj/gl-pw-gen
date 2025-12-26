@@ -58,7 +58,7 @@ export async function scaffold(a: Answers) {
     await step('Add Notifications stub (email, slack, teams)', async () => {
       await renderAndCopyDir(
         TPL('extras/notifications'),
-        path.join(dest, 'tools', 'notifications'),
+        path.join(dest, 'src', 'tools', 'notifications'),
         a,
       );
     });
@@ -84,7 +84,7 @@ export async function scaffold(a: Answers) {
     await step('Add Zephyr publish stub', async () => {
       await renderAndCopyDir(
         TPL('extras/publications'),
-        path.join(dest, 'tools', 'publications'),
+        path.join(dest, 'src', 'tools', 'publications'),
         a,
       );
     });
@@ -131,6 +131,7 @@ export async function scaffold(a: Answers) {
           'ts-node': '^10.9.2',
           tsx: '^4.20.6',
           '@types/node': '^20.14.15',
+          '@types/argparse': '^2.0.17',
           'typescript-eslint': '^8.8.1',
         }
       : {}),
@@ -138,6 +139,7 @@ export async function scaffold(a: Answers) {
       ? {
           nodemailer: '^7.0.11',
           '@slack/web-api': '^7.13.0',
+          '@slack/webhook': '^7.0.6',
           '@types/nodemailer': '^7.0.4',
         }
       : {}),

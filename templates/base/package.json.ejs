@@ -1,5 +1,5 @@
 {
-  "name": "<%= projectName %>",
+  "name": "playwright-e2e-framework",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -13,6 +13,8 @@
     "fmt": "prettier -w . --ignore-pattern .prettierignore",
     "lint": "eslint . --fix --max-warnings 0 --no-cache",
     "syntax-check": "tsc --noEmit",
-    "logs:clean": "rimraf artifacts/logs"
+    "logs:clean": "rimraf artifacts/logs",
+    "notify-report:uat": "ts-node src/tools/notifications/notifications.ts --env uat --email True --slack True",
+    "run-and-notify:uat": "npm run run:headed && npm run notify-report:uat"
   }
 }

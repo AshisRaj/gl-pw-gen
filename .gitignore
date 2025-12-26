@@ -13,6 +13,9 @@ trace.zip
 html/
 
 test-ui/
+mytests/
+mytest/
+mytest2/
 
 
 # Playwright

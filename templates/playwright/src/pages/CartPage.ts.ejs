@@ -31,7 +31,7 @@ export class CartPage extends BasePage {
   // Define page navigation
   navigation = {
     goToCartPage: async (): Promise<void> => {
-      await this.navigateTo('https://www.saucedemo.com/cart.html');
+      await this.navigateTo(process.env.APP_BASE_URL ? `${process.env.APP_BASE_URL}cart.html` : 'https://www.saucedemo.com/cart.html');
     },
   };
 }

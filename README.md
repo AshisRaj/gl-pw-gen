@@ -7,6 +7,8 @@ A zero‑setup CLI to scaffold Playwright test repositories with batteries inclu
 ```bash
 npm run build
 npx gl-pw-gen init my-tests \  --reporter allure \  --ci github \  --preset hybrid
+# Mac
+node ./bin/cli.js init my-test
 ```
 
 Then:

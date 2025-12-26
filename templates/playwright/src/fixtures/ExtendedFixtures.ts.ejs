@@ -11,7 +11,7 @@ const ARTIFACTS_DIR = path.join(PROJECT_ROOT, 'artifacts');
 const COOKIES_DIR = path.join(ARTIFACTS_DIR, 'cookies');
 
 // Keep your existing env naming
-const storageStatePath = path.resolve(COOKIES_DIR, `${process.env.USER}_cookies.json`);
+const storageStatePath = path.resolve(COOKIES_DIR, `${process.env.USERNAME}_cookies.json`);
 
 // ---- Auth mode switch (FORM | SESSION | COOKIES) ----
 type AuthMode = 'FORM' | 'SESSION' | 'COOKIES';
@@ -42,7 +42,7 @@ export const test = baseTest.extend<Fixtures>({
     // Default: FORM login on the same built-in page
     const loginPage = new LoginPage(page);
     await loginPage.navigation.goToLoginPage();
-    await loginPage.login(process.env.USER!, process.env.PASSWORD!);
+    await loginPage.login(process.env.USERNAME!, process.env.USERPASSWORD!);
     await use(page);
   },
 

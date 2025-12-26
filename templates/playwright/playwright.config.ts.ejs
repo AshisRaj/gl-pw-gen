@@ -23,7 +23,7 @@ dotenv.config({ path: dotEnvPath });
 const reportMetaData = new MetadataBuilder()
   .addBase({
     // injected by generator
-    project: "<%= projectName %>",
+    project: process.env.PROJECT_NAME || 'Playwright E2E Framework',
     preset: "<%= preset %>",
     ci: "<%= ci %>",
     reporter: "<%= reporter %>",
@@ -40,6 +40,34 @@ const reportMetaData = new MetadataBuilder()
  * - list:     simple console reporter
  */
 
+<% if (reporter === "monocart") { %>
+  // Define the MonocartSummary interface
+  interface MonocartSummary {
+    name: string;
+    dateH: string;
+    durationH: string;
+    cwd: string;
+    outputFile: string;
+    outputDir: string;
+    system: {
+      arch: string;
+      platform: string;
+      release: string;
+      type: string;
+      version: string;
+      hostname: string;
+      node: string;
+      playwright: string;
+      testDir: string;
+      outputFile: string;
+      outputDir: string;
+    };
+    htmlPath: string;
+    jsonPath: string;
+    summaryTable: any;
+  }
+<% } %>
+
 const reporter: ReporterDescription[] =
 <% if (reporter === "monocart") { %>
   [
@@ -50,7 +78,7 @@ const reporter: ReporterDescription[] =
       },
     ],
     ["monocart-reporter", {
-      name: "<%= projectName %> - Functional UI Test Report",
+      name: process.env.PROJECT_NAME || 'Playwright E2E Framework',
       outputFile: path.join(PROJECT_ROOT, "artifacts", "reports", "monocart-report", "index.html"),
       tags: {
         smoke: {

@@ -55,11 +55,15 @@ export class LoginPage extends BasePage {
   // Define page navigation
   navigation = {
     goToLoginPage: async (): Promise<void> => {
-      await this.navigateTo('https://www.saucedemo.com/');
+      await this.navigateTo(process.env.APP_BASE_URL || 'https://www.saucedemo.com/');
     },
 
     goToInventoryPage: async (): Promise<void> => {
-      await this.navigateTo('https://www.saucedemo.com/inventory.html');
+      await this.navigateTo(
+        process.env.APP_BASE_URL
+          ? `${process.env.APP_BASE_URL}inventory.html`
+          : 'https://www.saucedemo.com/inventory.html',
+      );
     },
   };
 }

@@ -55,7 +55,7 @@ export class InventoryPage extends BasePage {
   // Define page navigation
   navigation = {
     goToInventoryPage: async (): Promise<void> => {
-      await this.navigateTo('https://www.saucedemo.com/inventory.html');
+      await this.navigateTo(process.env.APP_BASE_URL ? `${process.env.APP_BASE_URL}inventory.html` : 'https://www.saucedemo.com/inventory.html');
     },
   };
 }

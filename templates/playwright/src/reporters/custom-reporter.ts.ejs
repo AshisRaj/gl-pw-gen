@@ -31,10 +31,12 @@ export default class CustomReporter implements Reporter {
     total: 0,
     passed: 0,
     failed: 0, // includes timedOut
+    status: '' as string,
     skipped: 0,
     timedOut: 0, // informational
     retriesAttempted: 0,
     durationMs: 0,
+    durationHS: '' as string,
     projects: [] as string[],
   };
 
@@ -108,8 +110,11 @@ export default class CustomReporter implements Reporter {
 
   async onEnd() {
     this.summary.durationMs = Date.now() - this.startedAt;
+    this.summary.durationHS = `${(this.summary.durationMs / 1000).toFixed(2)}s`;
     this.summary.projects = Array.from(this.projects);
 
+    const status = this.summary.failed > 0 ? 'Failed' : 'Passed';
+    this.summary.status = status;
     const out = { ...this.summary, ...this.reportMetaData };
     fs.writeFileSync(REPORT_JSON, JSON.stringify(out, null, 2));
 
@@ -125,8 +130,12 @@ export default class CustomReporter implements Reporter {
     logger.info(`${yellow('  Skipped:')} ${out.skipped}`);
     logger.info(`${cyan('  Retries Attempted:')} ${out.retriesAttempted}`);
     logger.info(`${cyan('  Projects:')} ${out.projects.join(', ') || 'default'}`);
-    logger.info(`${cyan('  Duration:')} ${out.durationMs} ms`);
+    logger.info(`${cyan('  Duration:')} ${out.durationHS}`);
 
     logger.info(bold(cyan('✅ Test execution complete.\n')));
+  }
+
+  onError(error: TestError): void {
+    logger.error(red(`❗ Reporter caught error: ${error.message || error.value || error}`));
   }
 }

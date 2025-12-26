@@ -33,8 +33,8 @@ export default async function globalSetup(config: FullConfig) {
 const setUpUsersCookies = async () => {
   const users = [
     {
-      userName: process.env.USER || 'standard_user',
-      password: process.env.PASSWORD || 'secret_sauce',
+      userName: process.env.USERNAME || 'standard_user',
+      password: process.env.USERPASSWORD || 'secret_sauce',
     },
   ];
 

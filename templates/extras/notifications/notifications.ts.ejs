@@ -1,121 +1,282 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Stub for results notifications.
  * Fill your org's base URL, project key, and API tokens into .env files.
  */
 
-import { WebClient } from '@slack/web-api';
-import { logger } from '@utils';
+import { IncomingWebhook } from '@slack/webhook';
+import { ArgumentParser } from 'argparse';
 import axios from 'axios';
+import dotenv from 'dotenv';
+import { promises as fs } from 'fs';
 import nodemailer from 'nodemailer';
-import { buildUnifiedSummary } from './summaryBuilder';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-export interface NotificationSummary {
-  status: string;
-  totalTests: number;
-  passed: number;
-  failed: number;
-  skipped: number;
-  durationMs: number;
-  startTime?: string | number;
-  endTime?: string | number;
+/**
+ * Generates the email subject line for the test report.
+ * @param summaryData
+ * @returns
+ */
+export async function generateReportSubject(summaryData?: any): Promise<string> {
+  return `${process.env.PROJECT_NAME}::Test Report (Env: ${summaryData?.env}, Status: ${summaryData?.status}, Branch: ${summaryData?.branch}, Date: ${summaryData?.date})`;
 }
 
-export interface NotificationAttachment {
-  filename: string;
-  path: string;
+/**
+ * Generates the email body for the test report.
+ * @param summaryData
+ * @returns
+ */
+export async function generateReportBody(summaryData?: any): Promise<string> {
+  return `
+      <html>
+      <head>
+        <style>
+          table { width: 60%; border-collapse: collapse; }
+          th, td { border: 1px solid black; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <p>Automated Test Report for ${summaryData?.date ?? new Date().toISOString()}</p>
+        <p>Please find the attached Test Report.</p>
+        <table>
+          <tr><th>Environment</th><td>${summaryData.env}</td></tr>
+          <tr><th>Host</th><td>${summaryData.hostname}</td></tr>
+          <tr><th>User</th><td>${summaryData.user}</td></tr>
+          <tr><th>Operating System</th><td>${summaryData.os_name}</td></tr>
+          <tr><th>Branch</th><td>${summaryData.branch}</td></tr>
+          <tr><th>Node Version</th><td>${summaryData.node_version}</td></tr>
+          <tr><th>Duration</th><td>${summaryData.durationHS}</td></tr>
+        </table>
+        <h3>Test Results:</h3>
+        <table>
+          <tr>
+            <th>Total Tests</th>
+            <th>Passed</th>
+            <th>Failed</th>
+            <th>Skipped</th>
+          </tr>
+          <tr>
+            <td>${summaryData.total}</td>
+            <td>${summaryData.passed}</td>
+            <td>${summaryData.failed}</td>
+            <td>${summaryData.skipped}</td>
+          </tr>
+        </table>
+        <h3>Screenshots:</h3>
+        <p><img src="cid:image1" alt="Screenshot 1"></p>
+        <p><img src="cid:image2" alt="Screenshot 2"></p>
+        <p>Regards,<br>Project Team (User Name)</p>
+      </body>
+      </html>
+    `;
 }
 
-export interface NotifyOptions {
-  summary: NotificationSummary;
-  attachments?: NotificationAttachment[];
+/** Parses command-line arguments for notification settings.
+ * @returns Parsed arguments object.
+ */
+export function parseArguments(): any {
+  const parser = new ArgumentParser({
+    description: 'Email Utility for sending test reports',
+  });
+
+  parser.add_argument('--env', {
+    required: false,
+    default: 'False',
+    help: 'Provide environment details',
+    choices: ['qa', 'dev', 'staging', 'uat'],
+  });
+  parser.add_argument('--email', {
+    required: false,
+    default: 'False',
+    choices: ['True', 'False'],
+    help: 'Send email notification',
+  });
+  parser.add_argument('--slack', {
+    required: false,
+    default: 'False',
+    choices: ['True', 'False'],
+    help: 'Send slack notification',
+  });
+  parser.add_argument('--teams', {
+    required: false,
+    default: 'False',
+    choices: ['True', 'False'],
+    help: 'Send teams notification',
+  });
+  parser.add_argument('--branch', { required: false, help: 'Provide branch name' });
+  parser.add_argument('--folder_path', { required: false, help: 'Provide folder path' });
+
+  return parser.parse_args();
 }
 
-// export interface reportData {
-//   name: string;
-//   dateH: string;
-//   htmlPath: string;
-//   metadata: {
-//     env: string;
-//     hostname: string;
-//     user_id: string;
-//     os_name: string;
-//     branch: string;
-//     folderPath: string;
-//     node_version: string;
-//   };
-//   durationH: string;
-//   summaryTable: string;
-// }
+/**
+ * Reads the custom summary JSON file from the artifacts directory.
+ * @returns Parsed JSON object or null if the file is not found or unreadable.
+ */
+export async function readCustomSummary(): Promise<any | null> {
+  try {
+    const baseDir = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.resolve(baseDir, '../../../artifacts/custom-summary.json');
+    const content = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (err: any) {
+    console.warn('custom-summary.json not found or unreadable:', err?.message ?? String(err));
+    return null;
+  }
+}
 
-export async function sendNotifications(options: NotifyOptions) {
-  const { summary, attachments = [] } = options;
-  const reportData = await buildUnifiedSummary();
+/**
+ * Sends notifications via Email, Slack, and Teams based on the provided summary.
+ * @param summary
+ * @returns
+ */
+export async function sendNotifications(args: any, summary: any) {
+  const mergedSummary = {
+    status: summary?.status ?? summary?.status ?? 'Unknown',
+    total: summary?.total ?? summary?.total ?? 0,
+    passed: summary?.passed ?? summary?.passed ?? 0,
+    failed: summary?.failed ?? summary?.failed ?? 0,
+    skipped: summary?.skipped ?? summary?.skipped ?? 0,
+    durationMs: summary?.durationMs ?? summary?.durationMs ?? 0,
+    durationHS: summary?.durationHS ?? summary?.durationHS ?? '0s',
+    env: summary?.env ?? process.env.ENV ?? '',
+    branch: summary?.branch ?? process.env.BRANCH ?? '',
+    hostname: summary?.hostname ?? summary?.host ?? '',
+    os_name: summary?.os_name ?? summary?.os_name ?? summary?.platform ?? '',
+    user: summary?.user ?? summary?.user_id ?? '',
+    node_version: summary?.node_version ?? process.version,
+    date: summary?.date ?? new Date().toISOString(),
+  };
 
   // EMAIL
-  if (process.env.NOTIFY_EMAIL === 'true') {
-    try {
-      const emailOptions = {
-        transport: {
-          service: 'gmail',
-          auth: {
-            user: process.env.USERNAME || 'ashis.raj@gmail.com',
-            pass: process.env.PASSWORD || 'vklg pbec exru hkvi',
-          },
-        },
-        message: {
-          from: process.env.EMAIL_FROM || 'ashis.raj@gmail.com',
-          to: process.env.EMAIL_TO || 'ashis.raj@gmail.com',
-          cc: process.env.EMAIL_CC || 'ashis.raj@gmail.com',
-          bcc: process.env.EMAIL_BCC || '',
-          subject: process.env.EMAIL_SUB || `Test Report - ${reportData.durationMs}`,
-          attachments: attachments.map((a) => ({
-            filename: a.filename,
-            path: a.path,
-          })),
+  if (args.email.toLowerCase() === 'true') {
+    // Prefer explicit SMTP settings via env vars to avoid accidental attempts to connect
+    // to services without valid credentials (which can cause EHOSTUNREACH or other errors).
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined;
+    const smtpSecure =
+      process.env.SMTP_SECURE === 'true' || (smtpPort !== undefined && smtpPort === 465);
 
-          html: `<h3>${summary.status}</h3>
-              <ul>
-                <li>${reportData.passed}</li>
-              </ul>
-
-                <p>Please check attachment html for detail.</p>
-
-                <p>Thanks,</p>`,
+    if (!smtpHost || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.warn(
+        '⚠️ Email not sent: missing SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS in your .env to enable email notifications.',
+      );
+    } else {
+      const transportOptions: any = {
+        host: smtpHost,
+        port: smtpPort ?? 587,
+        secure: smtpSecure,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
         },
       };
 
-      const transporter = nodemailer.createTransport(emailOptions.transport);
-      return await transporter.sendMail(emailOptions.message);
+      // optional: allow insecure TLS in some corporate environments (opt-in)
+      if (process.env.SMTP_TLS_REJECT_UNAUTHORIZED === 'false') {
+        transportOptions.tls = { rejectUnauthorized: false };
+      }
 
-      // logger.info('📧 Email sent');
-    } catch (err) {
-      logger.error('❌ Email error:', err);
+      const message = {
+        from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+        to: process.env.EMAIL_TO || process.env.SMTP_USER,
+        cc: process.env.EMAIL_CC || undefined,
+        bcc: process.env.EMAIL_BCC || undefined,
+        subject: process.env.EMAIL_SUB || `${await generateReportSubject(mergedSummary)}`,
+        html: await generateReportBody(mergedSummary),
+      };
+
+      const transporter = nodemailer.createTransport(transportOptions);
+
+      await transporter
+        .sendMail(message)
+        .then((info) => {
+          console.log('✉️ Email sent:', info.messageId);
+        })
+        .catch((emailErr) => {
+          console.error('❌ Email error:', emailErr);
+        });
     }
+  } else {
+    console.info('Email notification is disabled');
   }
 
   // SLACK
-  if (process.env.NOTIFY_SLACK === 'true') {
-    try {
-      const slack = new WebClient(process.env.SLACK_TOKEN);
+  if (args.slack.toLowerCase() === 'true') {
+    const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+    if (!slackWebhookUrl) {
+      console.warn('⚠️ Slack not sent: missing SLACK_WEBHOOK_URL in environment.');
+    } else {
+      const webhook = new IncomingWebhook(slackWebhookUrl);
 
-      await slack.chat.postMessage({
-        channel: process.env.SLACK_CHANNEL!,
-        text:
-          `*Playwright Test Summary*\n` +
-          `Status: ${summary.status}\n` +
-          `Passed: ${summary.passed}\n` +
-          `Failed: ${summary.failed}\n` +
-          `Duration: ${summary.durationMs}ms`,
-      });
+      // Build a monospace table for Slack (displayed inside a code block)
+      const slackRows = [
+        ['Metric', 'Value'],
+        ['Total Tests', String(mergedSummary.total)],
+        ['Passed', String(mergedSummary.passed)],
+        ['Failed', String(mergedSummary.failed)],
+        ['Skipped', String(mergedSummary.skipped)],
+        ['Duration', String(mergedSummary.durationHS)],
+        ['Status', String(mergedSummary.status)],
+        ['Branch', String(mergedSummary.branch)],
+        ['Env', String(mergedSummary.env)],
+      ];
+      const col1Width = Math.max(...slackRows.map((r) => r[0].length));
+      const col2Width = Math.max(...slackRows.map((r) => r[1].length));
+      const slackTable =
+        '```\n' +
+        slackRows.map((r) => `${r[0].padEnd(col1Width)} | ${r[1].padEnd(col2Width)}`).join('\n') +
+        '\n```';
 
-      console.log('💬 Slack sent');
-    } catch (err) {
-      console.error('❌ Slack error:', err);
+      const subject = await generateReportSubject(mergedSummary);
+      const message = {
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*${subject}*`,
+            },
+          },
+          {
+            type: 'divider',
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: slackTable,
+            },
+          },
+        ],
+      };
+
+      if (mergedSummary.passed === mergedSummary.total) {
+        message.blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '✔ Congratulations! All tests passed.',
+          },
+        });
+      }
+      webhook
+        .send(message)
+        .then(() => {
+          console.log('💬 Slack sent');
+        })
+        .catch((slackErr) => {
+          console.error('❌ Slack error:', slackErr);
+        });
     }
+  } else {
+    console.info('Slack notification is disabled');
   }
 
   // TEAMS
-  if (process.env.NOTIFY_TEAMS === 'true') {
+  if (args.teams.toLowerCase() === 'true') {
     try {
       await axios.post(process.env.TEAMS_WEBHOOK_URL!, {
         '@type': 'MessageCard',
@@ -126,10 +287,10 @@ export async function sendNotifications(options: NotifyOptions) {
           {
             activityTitle: 'Playwright Test Summary',
             text:
-              `**Status:** ${summary.status}\n\n` +
-              `**Passed:** ${summary.passed}\n\n` +
-              `**Failed:** ${summary.failed}\n\n` +
-              `**Duration:** ${summary.durationMs}ms`,
+              `**Status:** ${mergedSummary.status}\n\n` +
+              `**Passed:** ${mergedSummary.passed}\n\n` +
+              `**Failed:** ${mergedSummary.failed}\n\n` +
+              `**Duration:** ${mergedSummary.durationHS}`,
           },
         ],
       });
@@ -138,5 +299,26 @@ export async function sendNotifications(options: NotifyOptions) {
     } catch (err) {
       console.error('❌ Teams error:', err);
     }
+  } else {
+    console.info('Teams notification is disabled');
   }
 }
+
+/**
+ * Main execution
+ */
+await (async () => {
+  // Always resolve paths from the generated project's config file location
+  const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
+
+  // Load the appropriate .env file based on the ENV variable
+  const ENV = (process.env.ENV || 'uat').toLowerCase();
+  const dotEnvPath = path.resolve(PROJECT_ROOT, `../../environments/.env.${ENV}`);
+  dotenv.config({ path: dotEnvPath });
+  const args = parseArguments();
+  // Try to read a local custom summary file
+  const summary = (await readCustomSummary()) || {};
+  await sendNotifications(args, summary).catch((err) => {
+    console.error('Error sending notifications:', err);
+  });
+})();
