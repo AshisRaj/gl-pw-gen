@@ -1,13 +1,9 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-import { logger } from '@utils';
-import path, { resolve } from 'path';
+import { ARTIFACTS_DIR, logger } from '@utils';
+import { resolve } from 'path';
 import { rimraf } from 'rimraf';
-import { fileURLToPath } from 'url';
 
-// ESM-safe __dirname
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cookiesFileName = `${process.env.USER}_cookies.json`;
-const storageStateFilePath = resolve(__dirname, `../../artifacts/cookies/${cookiesFileName}`);
+const storageStateFilePath = resolve(ARTIFACTS_DIR, `cookies/${cookiesFileName}`);
 
 /**
  * Global Teardown – runs once after all tests.

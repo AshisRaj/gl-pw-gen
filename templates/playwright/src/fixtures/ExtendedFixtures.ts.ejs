@@ -2,12 +2,9 @@ import { checkoutData } from '@data';
 import { Fixtures } from '@fixtures';
 import { CartPage, CheckoutPage, HomePage, InventoryPage, LoginPage } from '@pages';
 import { test as baseTest } from '@playwright/test';
-import { loadSessionCookies, logger } from '@utils';
+import { ARTIFACTS_DIR, loadSessionCookies, logger } from '@utils';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const ARTIFACTS_DIR = path.join(PROJECT_ROOT, 'artifacts');
 const COOKIES_DIR = path.join(ARTIFACTS_DIR, 'cookies');
 
 // Keep your existing env naming

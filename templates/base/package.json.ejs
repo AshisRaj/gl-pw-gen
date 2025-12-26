@@ -14,7 +14,7 @@
     "lint": "eslint . --fix --max-warnings 0 --no-cache",
     "syntax-check": "tsc --noEmit",
     "logs:clean": "rimraf artifacts/logs"<% if (notifications === true) { %>,
-    "notify-report:uat": "ts-node src/tools/notifications/notifications.ts --env uat --email True --slack True",
+    "notify-report:uat": "tsx src/tools/notifications/notifications.ts --env uat --email True --slack True",
     "run-and-notify:uat": "npm run run:headed && npm run notify-report:uat"
     <% } %>
   }

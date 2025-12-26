@@ -102,6 +102,8 @@ export async function scaffold(a: Answers) {
   };
   const devDeps: Record<string, string> = {
     // core tooling
+    'adm-zip': '^0.5.16',
+    '@types/adm-zip': '^0.5.7',
     eslint: '^9.36.0',
     '@eslint/js': '^9.36.0',
     globals: '^15.12.0',

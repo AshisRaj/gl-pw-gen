@@ -7,14 +7,11 @@ import type {
   TestError,
   TestResult,
 } from '@playwright/test/reporter';
-import { logger } from '@utils';
+import { ARTIFACTS_DIR, CONFIG_DIR, logger, PROJECT_ROOT, REPORTS_DIR } from '@utils';
 import fs from 'fs';
 import { bold, cyan, dim, gray, green, magenta, red, yellow } from 'kolorist';
 import path, { join } from 'path';
-import { fileURLToPath } from 'url';
 
-const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const ARTIFACTS_DIR = path.join(PROJECT_ROOT, 'artifacts');
 const REPORT_JSON = path.join(ARTIFACTS_DIR, 'custom-summary.json');
 
 function ensureDir(p: string) {
@@ -49,13 +46,13 @@ export default class CustomReporter implements Reporter {
 
   onBegin(config: FullConfig, suite: Suite) {
     ensureDir(ARTIFACTS_DIR);
-    const allureResultPath = join(ARTIFACTS_DIR, 'reports', 'allure-results');
+    const allureResultPath = join(REPORTS_DIR, 'allure-results');
 
     if (!fs.existsSync(allureResultPath)) {
       fs.mkdirSync(join(allureResultPath), { recursive: true });
     }
 
-    const srcDir = join(PROJECT_ROOT, 'src', 'configs', 'executor.json');
+    const srcDir = join(CONFIG_DIR, 'executor.json');
     const destDir = join(allureResultPath, 'executor.json');
 
     fs.copyFileSync(srcDir, destDir);

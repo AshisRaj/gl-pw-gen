@@ -1,13 +1,8 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import fs from 'fs';
-import path, { resolve } from 'path';
+import { resolve } from 'path';
 
 import { chromium, expect, FullConfig } from '@playwright/test';
-import { logger } from '@utils';
-import { fileURLToPath } from 'url';
-
-// ESM-safe __dirname
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { ARTIFACTS_DIR, logger } from '@utils';
 
 /**
  * Global Setup – runs once before all tests.
@@ -45,7 +40,7 @@ const setUpUsersCookies = async () => {
 
   for (const user of users) {
     const cookiesFileName = `${user.userName}_cookies.json`;
-    const storageStateFilePath = resolve(__dirname, `../../artifacts/cookies/${cookiesFileName}`);
+    const storageStateFilePath = resolve(ARTIFACTS_DIR, `cookies/${cookiesFileName}`);
     if (fs.existsSync(storageStateFilePath)) {
       logger.info(
         `The storage state file already exists, hence no need to overwrite - ${storageStateFilePath}`,

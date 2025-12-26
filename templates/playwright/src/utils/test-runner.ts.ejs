@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { logger } from '@utils';
+import { logger, PROJECT_ROOT } from '@utils';
 import { execSync } from 'child_process';
 import { Command } from 'commander';
 import fs from 'fs';
 import path, { join } from 'path';
-import { fileURLToPath } from 'url';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '../..');
 const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 <%
 let defaultReporter = 'allure';
@@ -37,7 +34,7 @@ const program = new Command()
   .option('--ui', 'Run Playwright UI mode', false)
   .option('--headed', 'Headed mode', false)
   .option('--workers <n>', 'Number of workers', '1')
-  .option('--config <path>', 'Custom config path', join(ROOT, 'playwright.config.ts'))
+  .option('--config <path>', 'Custom config path', join(PROJECT_ROOT, 'playwright.config.ts'))
   .option('--trace <mode>', 'Trace mode (on|off|retain-on-failure|on-first-retry)', 'off')
   .allowUnknownOption(true);
 
@@ -57,7 +54,7 @@ function run(command: string, env: Record<string, string> = {}) {
   try {
     logger.info(`💻 Running: ${command}`);
     execSync(command, {
-      cwd: ROOT,
+      cwd: PROJECT_ROOT,
       stdio: 'inherit',
       env: { ...process.env, ...env },
     });
@@ -88,7 +85,7 @@ run(cmd);
 const reporter = String(opts.reporter || DEFAULT_REPORTER).toLowerCase();
 
 if (reporter === 'monocart') {
-  const reportFile = path.join(ROOT, 'artifacts', 'reports', 'monocart-report', 'index.html');
+  const reportFile = path.join(PROJECT_ROOT, 'artifacts', 'reports', 'monocart-report', 'index.html');
   if (fs.existsSync(reportFile)) {
     logger.info(`📊 Opening Monocart report: ${reportFile}`);
     run(`${NPX} monocart show-report "${reportFile}"`);
@@ -96,7 +93,7 @@ if (reporter === 'monocart') {
     logger.warn('No Monocart report found!');
   }
 } else if (reporter === 'allure') {
-  const resultsDir = path.join(ROOT, 'artifacts', 'reports', 'allure-results');
+  const resultsDir = path.join(PROJECT_ROOT, 'artifacts', 'reports', 'allure-results');
   if (fs.existsSync(resultsDir) && fs.readdirSync(resultsDir).length > 0) {
     run(
       `${NPX} allure generate --single-file artifacts/reports/allure-results -o artifacts/reports/allure-report --clean`,

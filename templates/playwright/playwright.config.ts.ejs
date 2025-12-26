@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineConfig, devices, ReporterDescription } from '@playwright/test';
+import { ENVIRONMENTS_DIR, MetadataBuilder, PROJECT_ROOT } from '@utils';
 import dotenv from 'dotenv';
-import { MetadataBuilder } from '@utils';
 <% if (reporter === "monocart") { %>
 import fs from 'fs';
 <% } %>
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Always resolve paths from the generated project's config file location
-const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
 
 // Load the appropriate .env file based on the ENV variable
 const ENV = (process.env.ENV || 'uat').toLowerCase();
-const dotEnvPath = path.resolve(PROJECT_ROOT, `src/environments/.env.${ENV}`);
+const dotEnvPath = path.resolve(ENVIRONMENTS_DIR, `.env.${ENV}`);
 dotenv.config({ path: dotEnvPath });
 
 /**
