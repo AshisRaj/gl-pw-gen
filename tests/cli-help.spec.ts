@@ -12,12 +12,19 @@ describe('CLI help', () => {
     // Top usage line (escape [options])
     expect(out).toMatch(/^Usage:\s+gl-pw-gen init \[options\] <project-name>/im);
 
-    // Key options you expose
+    // Key options present in help output
     expect(out).toMatch(/--pm <name>.*Package manager.*\(npm\|yarn\)/i);
-    expect(out).toMatch(/--js\b.*Use JavaScript/i);
+    expect(out).toMatch(/--js\b.*Use JavaScript instead of TypeScript/i);
     expect(out).toMatch(/--ci <provider>.*\(github\|gitlab\|none\)/i);
     expect(out).toMatch(/--reporter <name>.*\(html\|allure\|monocart\)/i);
-    expect(out).toMatch(/-y, --yes\b.*skip prompts/i);
+    expect(out).toMatch(/-y, --yes\b.*Use defaults and skip prompts/i);
     expect(out).toMatch(/--non-interactive\b.*Alias of --yes/i);
+
+    // New/extra options observed in actual help output
+    expect(out).toMatch(/--notify <channels\.\.\.>.*Notifications.*\(email\|slack\|teams\)/i);
+    expect(out).toMatch(/--zephyr\b/);
+    expect(out).toMatch(/--no-husky\b/);
+    expect(out).toMatch(/--preset <name>.*Quick preset.*\(web\|api\|hybrid\)/i);
+    expect(out).toMatch(/-h, --help\b.*display help for command/i);
   });
 });
