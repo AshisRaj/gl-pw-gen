@@ -6,7 +6,7 @@ export type Answers = {
   packageManager: 'npm' | 'yarn';
   ci: 'github' | 'gitlab' | 'none';
   reporter: 'html' | 'allure' | 'monocart';
-  notifications: 'email' | 'slack' | 'teams';
+  notifications: boolean;
   husky: boolean;
   zephyr: boolean;
   preset: 'web' | 'api' | 'hybrid';
@@ -51,7 +51,7 @@ export async function askQuestions(projectName: string, flags: any): Promise<Ans
       packageManager: (base.packageManager ?? 'npm') as 'npm' | 'yarn',
       ci: (base.ci ?? 'github') as 'github' | 'gitlab' | 'none',
       reporter: (base.reporter ?? 'allure') as 'html' | 'allure' | 'monocart',
-      notifications: (base.notifications ?? 'email') as 'email' | 'slack' | 'teams',
+      notifications: base.notifications ?? true,
       husky: base.husky ?? true,
       zephyr: base.zephyr ?? false,
       preset: (base.preset ?? 'web') as 'web' | 'api' | 'hybrid',
@@ -105,14 +105,9 @@ export async function askQuestions(projectName: string, flags: any): Promise<Ans
       default: base.reporter,
     },
     {
-      type: 'list',
+      type: 'confirm',
       name: 'notifications' as const,
-      message: 'Select notification channels:',
-      choices: [
-        { name: 'Email', value: 'email' },
-        { name: 'Slack', value: 'slack' },
-        { name: 'Teams', value: 'teams' },
-      ],
+      message: 'Include notification channels (email, slack, teams):',
       default: base.notifications,
     },
     {

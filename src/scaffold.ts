@@ -54,7 +54,7 @@ export async function scaffold(a: Answers) {
     });
   }
 
-  if (a.notifications === 'email') {
+  if (a.notifications) {
     await step('Add Notifications stub (email, slack, teams)', async () => {
       await renderAndCopyDir(
         TPL('extras/notifications'),
@@ -125,7 +125,7 @@ export async function scaffold(a: Answers) {
     // Add Monocart only when chosen
     'monocart-reporter': a.reporter === 'monocart' ? '^2.9.18' : (undefined as any),
     // TypeScript toolchain (only when TS is chosen)
-    ...(a.language === 'ts'
+    ...(a.language === 'ts' || a.language === 'js'
       ? {
           typescript: '^5.8.3',
           'ts-node': '^10.9.2',
@@ -138,7 +138,6 @@ export async function scaffold(a: Answers) {
     ...(a.notifications
       ? {
           nodemailer: '^7.0.11',
-          '@slack/web-api': '^7.13.0',
           '@slack/webhook': '^7.0.6',
           '@types/nodemailer': '^7.0.4',
         }
